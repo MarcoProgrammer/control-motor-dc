@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 01 - Modelado en Espacio de Estados</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f6f8; --text-main: #2c3e50; --accent-red: #be1e2d;
+            --code-bg: #1e1e1e; --box-bg: #ffffff; --border-light: #dcdfe6;
+        }
+        body, html { margin: 0; width: 100vw; height: 100vh; background: #1a1a1a; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #presentation { width: 1280px; height: 720px; background: var(--bg-color); position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
+        .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 35px 60px; display: none; flex-direction: column; opacity: 0; background: var(--bg-color); box-sizing: border-box;}
+        .slide.active { display: flex; opacity: 1; }
+        .header { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #8c92a0; margin-bottom: 10px; text-transform: uppercase; }
+        h1 { font-family: 'Fira Code', monospace; color: var(--text-main); font-size: 26px; border-bottom: 2px solid var(--accent-red); padding-bottom: 8px; margin: 0 0 15px 0; }
+        h2 { font-size: 16px; color: var(--accent-red); margin: 0 0 5px 0; font-family: 'Fira Code', monospace;}
+        .bloque-formal { background: var(--box-bg); border: 1px solid var(--border-light); padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .etiqueta-bloque { font-family: 'Fira Code', monospace; font-size: 12px; color: var(--accent-red); font-weight: bold; margin-bottom: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .footer-nav { position: absolute; bottom: 20px; left: 60px; right: 60px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 12px; }
+        button { background: var(--text-main); color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-family: 'Fira Code', monospace; font-weight: 600; }
+        button:hover { background: var(--accent-red); }
+        .controls-panel label { display: block; font-weight: bold; font-size: 12px; margin-top: 10px; }
+        .controls-panel input { width: 100%; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="presentation">
+
+    <!-- SLIDE 1 -->
+    <div class="slide active">
+        <div class="header"><span>1 / 5</span><span>SESIÓN 01: FUNDAMENTOS FÍSICOS</span></div>
+        <h2>01 LEYES FÍSICAS Y ECUACIONES DIFERENCIALES</h2>
+        <h1>Modelado Físico del Motor DC</h1>
+        
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">Γ ECUACIONES ACOPLADAS DEL SISTEMA</div>
+            <p>El comportamiento dinámico se divide en el circuito eléctrico de armadura y la mecánica rotacional de la carga:</p>
+            $$V_a(t) = R_a i_a(t) + L_a \frac{d i_a(t)}{d t} + e_b(t), \quad e_b(t) = K_e \omega(t)$$
+            $$T_m(t) = K_t i_a(t) = J_m \frac{d \omega(t)}{d t} + B_m \omega(t) + T_L(t)$$
+        </div>
+
+        <div class="grid-2">
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">PARÁMETROS ELÉCTRICOS</div>
+                <ul>
+                    <li>$R_a$: Resistencia de armadura ($\Omega$).</li>
+                    <li>$L_a$: Inductancia de armadura ($H$).</li>
+                    <li>$K_e$: Constante contraelectromotriz ($V \cdot s/rad$).</li>
+                </ul>
+            </div>
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">PARÁMETROS MECÁNICOS</div>
+                <ul>
+                    <li>$J_m$: Inercia del rotor y carga ($kg \cdot m^2$).</li>
+                    <li>$B_m$: Coeficiente de fricción viscosa ($N \cdot m \cdot s/rad$).</li>
+                    <li>$K_t$: Constante de torque ($N \cdot m / A$).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide">
+        <div class="header"><span>2 / 5</span><span>SESIÓN 01: REPRESENTACIÓN MATRICIAL</span></div>
+        <h2>02 REPRESENTACIÓN EN ESPACIO DE ESTADOS CONTINUO</h2>
+        <h1>Formulación $\dot{x}(t) = A x(t) + B u(t)$</h1>
+        
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">Γ SELECCIÓN DE LAS VARIABLES DE ESTADO</div>
+            <p>Definiendo el vector de estados $x(t) = [\omega(t), \, i_a(t)]^T$ y la entrada de control $u(t) = V_a(t)$:</p>
+            $$\begin{bmatrix} \dot{\omega}(t) \\ \dot{i_a}(t) \end{bmatrix} = \begin{bmatrix} -\frac{B_m}{J_m} & \frac{K_t}{J_m} \\ -\frac{K_e}{L_a} & -\frac{R_a}{L_a} \end{bmatrix} \begin{bmatrix} \omega(t) \\ i_a(t) \end{bmatrix} + \begin{bmatrix} 0 \\ \frac{1}{L_a} \end{bmatrix} V_a(t)$$
+            $$y(t) = \begin{bmatrix} 1 & 0 \end{bmatrix} \begin{bmatrix} \omega(t) \\ i_a(t) \end{bmatrix}$$
+        </div>
+
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">PROPIEDADES DEL SISTEMA MATRICIAL</div>
+            <p>Los autovalores de la matriz $A$ determinan los polos del sistema en el plano s: $\det(sI - A) = 0$.</p>
+        </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide">
+        <div class="header"><span>3 / 5</span><span>SESIÓN 01: CONTROL DIGITAL</span></div>
+        <h2>03 DISCRETIZACIÓN DE ESTADOS</h2>
+        <h1>Formulación Discreta $x(k+1) = \Phi x(k) + \Gamma u(k)$</h1>
+
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">Γ MÉTODO ZOH (ZERO-ORDER HOLD)</div>
+            <p>Para su procesamiento en el ESP32 a un tiempo de muestreo $T_s$, se obtiene la solución exacta:</p>
+            $$\Phi = e^{A T_s} = \mathcal{L}^{-1}\left\{ (sI - A)^{-1} \right\}_{t = T_s}$$
+            $$\Gamma = \left( \int_{0}^{T_s} e^{A \tau} d\tau \right) B = A^{-1}(\Phi - I)B$$
+        </div>
+
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">APROXIMACIÓN DE EULER (PARA EJECUCIÓN RÁPIDA)</div>
+            <p>Cuando $T_s \ll \tau_{mínima}$, podemos aproximar en código:</p>
+            $$\Phi \approx I + A T_s, \quad \Gamma \approx B T_s$$
+        </div>
+    </div>
+
+    <!-- SLIDE 4: SIMULACIÓN -->
+    <div class="slide">
+        <div class="header"><span>4 / 5</span><span>SESIÓN 01: LABORATORIO VIRTUAL</span></div>
+        <h2>04 SIMULACIÓN DE RESPUESTA AL ESCALÓN</h2>
+        <h1>Influencia de Inercia ($J_m$) e Inductancia ($L_a$)</h1>
+
+        <div class="grid-2" style="grid-template-columns: 280px 1fr;">
+            <div class="bloque-formal controls-panel">
+                <div class="etiqueta-bloque">PARÁMETROS FÍSICOS</div>
+                
+                <label>Inercia $J_m$: <span id="valJ">0.02</span> kg·m²</label>
+                <input type="range" id="jSlider" min="0.005" max="0.1" step="0.005" value="0.02" oninput="runSim()">
+
+                <label>Inductancia $L_a$: <span id="valL">0.05</span> H</label>
+                <input type="range" id="lSlider" min="0.01" max="0.2" step="0.01" value="0.05" oninput="runSim()">
+
+                <label>Voltaje Escalón $V_a$: <span id="valV">12</span> V</label>
+                <input type="range" id="vSlider" min="1" max="24" step="1" value="12" oninput="runSim()">
+            </div>
+            <div class="bloque-formal" style="height: 400px; padding: 10px;">
+                <canvas id="simChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5: CÓDIGO -->
+    <div class="slide">
+        <div class="header"><span>5 / 5</span><span>SESIÓN 01: DESPLIEGUE EN ESP32</span></div>
+        <h2>> LA HORA DEL CÓDIGO</h2>
+        <h1>Clase `MotorModel` para Simulación en Hardware</h1>
+
+        <div class="grid-2">
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">☐ ESTIMADOR EN TIEMPO REAL</div>
+                <p>Permite simular el comportamiento del motor dentro del propio ESP32 (Hardware-in-the-Loop) sin necesidad de conectar el motor físico.</p>
+            </div>
+            <div class="bloque-formal" style="background: var(--code-bg); color: #d4d4d4; font-family: monospace; font-size: 12px; border-top: 20px solid #333;">
+<span style="color:#569cd6">class</span> <span style="color:#4ec9b0">ModeloMotorDC</span> {
+<span style="color:#569cd6">private</span>:
+    <span style="color:#569cd6">float</span> w = 0.0f, i = 0.0f;
+    <span style="color:#569cd6">float</span> Ra = 2.0f, La = 0.05f, Ke = 0.1f, Kt = 0.1f, Jm = 0.02f, Bm = 0.01f;
+<span style="color:#569cd6">public</span>:
+    <span style="color:#569cd6">void</span> <span style="color:#dcdcaa">update</span>(<span style="color:#569cd6">float</span> Va, <span style="color:#569cd6">float</span> Ts) {
+        <span style="color:#569cd6">float</span> dw = (Kt * i - Bm * w) / Jm;
+        <span style="color:#569cd6">float</span> di = (Va - Ra * i - Ke * w) / La;
+        w += dw * Ts;
+        i += di * Ts;
+    }
+    <span style="color:#569cd6">float</span> <span style="color:#dcdcaa">getSpeed</span>() <span style="color:#569cd6">const</span> { <span style="color:#569cd6">return</span> w; }
+    <span style="color:#569cd6">float</span> <span style="color:#dcdcaa">getCurrent</span>() <span style="color:#569cd6">const</span> { <span style="color:#569cd6">return</span> i; }
+};
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación -->
+    <div class="footer-nav">
+        <button onclick="prevSlide()">← Atrás</button>
+        <span id="slideNum" style="font-family:'Fira Code'; font-size:12px; color:#666;">1 / 5</span>
+        <button onclick="nextSlide()">Adelante →</button>
+    </div>
+</div>
+
+<script>
+    let currentSlide = 0; const slides = document.querySelectorAll('.slide');
+    function showSlide(index) {
+        slides.forEach(s => s.classList.remove('active'));
+        slides[index].classList.add('active'); currentSlide = index;
+        document.getElementById('slideNum').innerText = `${index + 1} / 5`;
+        if(index === 3) setTimeout(runSim, 100);
+    }
+    function nextSlide() { if(currentSlide < 4) showSlide(currentSlide + 1); }
+    function prevSlide() { if(currentSlide > 0) showSlide(currentSlide - 1); }
+    document.addEventListener('keydown', (e) => { if(e.key === 'ArrowRight') nextSlide(); if(e.key === 'ArrowLeft') prevSlide(); });
+
+    let chart = null;
+    function runSim() {
+        const Jm = parseFloat(document.getElementById('jSlider').value);
+        const La = parseFloat(document.getElementById('lSlider').value);
+        const Va = parseFloat(document.getElementById('vSlider').value);
+
+        document.getElementById('valJ').innerText = Jm;
+        document.getElementById('valL').innerText = La;
+        document.getElementById('valV').innerText = Va;
+
+        const Ra = 2.0, Ke = 0.1, Kt = 0.1, Bm = 0.01, Ts = 0.005;
+        let tData = [], wData = [], iData = [];
+        let w = 0, i = 0;
+
+        for (let step = 0; step < 150; step++) {
+            let di = (Va - Ra * i - Ke * w) / La;
+            let dw = (Kt * i - Bm * w) / Jm;
+            i += di * Ts;
+            w += dw * Ts;
+            tData.push((step * Ts).toFixed(2));
+            wData.push(w);
+            iData.push(i);
+        }
+
+        const ctx = document.getElementById('simChart').getContext('2d');
+        if(chart) chart.destroy();
+        chart = new Chart(ctx, { 
+            type: 'line', 
+            data: { 
+                labels: tData, 
+                datasets: [
+                    { label: 'Velocidad ω(t) [rad/s]', data: wData, borderColor: '#be1e2d', borderWidth: 2, pointRadius: 0 },
+                    { label: 'Corriente i_a(t) [A]', data: iData, borderColor: '#2980b9', borderWidth: 1.5, pointRadius: 0 }
+                ]
+            }, 
+            options: { responsive: true, maintainAspectRatio: false, animation: false }
+        });
+    }
+</script>
+</body>
+</html>
