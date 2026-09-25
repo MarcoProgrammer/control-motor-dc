@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 02 - Controladores PID y Sintonización</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f6f8; --text-main: #2c3e50; --accent-red: #be1e2d;
+            --code-bg: #1e1e1e; --box-bg: #ffffff; --border-light: #dcdfe6;
+        }
+        body, html { margin: 0; width: 100vw; height: 100vh; background: #1a1a1a; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #presentation { width: 1280px; height: 720px; background: var(--bg-color); position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
+        .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 35px 60px; display: none; flex-direction: column; opacity: 0; background: var(--bg-color); box-sizing: border-box;}
+        .slide.active { display: flex; opacity: 1; }
+        .header { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: #8c92a0; margin-bottom: 10px; text-transform: uppercase; }
+        h1 { font-family: 'Fira Code', monospace; color: var(--text-main); font-size: 26px; border-bottom: 2px solid var(--accent-red); padding-bottom: 8px; margin: 0 0 15px 0; }
+        h2 { font-size: 16px; color: var(--accent-red); margin: 0 0 5px 0; font-family: 'Fira Code', monospace;}
+        .bloque-formal { background: var(--box-bg); border: 1px solid var(--border-light); padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .etiqueta-bloque { font-family: 'Fira Code', monospace; font-size: 12px; color: var(--accent-red); font-weight: bold; margin-bottom: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .footer-nav { position: absolute; bottom: 20px; left: 60px; right: 60px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 12px; }
+        button { background: var(--text-main); color: white; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-family: 'Fira Code', monospace; font-weight: 600; }
+        button:hover { background: var(--accent-red); }
+        .controls-panel label { display: block; font-weight: bold; font-size: 12px; margin-top: 8px; }
+        .controls-panel input { width: 100%; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="presentation">
+
+    <!-- SLIDE 1 -->
+    <div class="slide active">
+        <div class="header"><span>1 / 5</span><span>SESIÓN 02: CONTROL CLÁSICO</span></div>
+        <h2>01 ESTRUCTURA PARALELA DEL PID</h2>
+        <h1>Ecuación Continua del Controlador PID</h1>
+        
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">Γ ESTRUCTURA PARALELA ESTÁNDAR</div>
+            <p>La señal de control $u(t)$ responde a la suma ponderada del error presente, acumulado y su tasa de cambio:</p>
+            $$u(t) = K_p \, e(t) + K_i \int_{0}^{t} e(\tau) d\tau + K_d \frac{d e(t)}{d t}$$
+            $$e(t) = r(t) - y(t)$$
+        </div>
+
+        <div class="grid-3">
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">ACCIÓN PROPORCIONAL ($K_p$)</div>
+                <p>Reduce el tiempo de subida. Un valor excesivamente alto provoca sobreoscilación e inestabilidad.</p>
+            </div>
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">ACCIÓN INTEGRAL ($K_i$)</div>
+                <p>Elimina el error en estado estacionario ($e_{ss} \to 0$). Introduce retraso de fase.</p>
+            </div>
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">ACCIÓN DERIVATIVA ($K_d$)</div>
+                <p>Anticipa el comportamiento del error. Agrega amortiguamiento al sistema transitorio.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide">
+        <div class="header"><span>2 / 5</span><span>SESIÓN 02: IMPLEMENTACIÓN DIGITAL</span></div>
+        <h2>02 DISCRETIZACIÓN DE ECUACIONES</h2>
+        <h1>Algoritmos Posicional y de Velocidad</h1>
+        
+        <div class="grid-2">
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">ALGORITMO POSICIONAL</div>
+                <p>Aproxima la integral por suma rectangular y la derivada por diferencia finita:</p>
+                $$u(k) = K_p e(k) + K_i T_s \sum_{j=0}^{k} e(j) + K_d \frac{e(k) - e(k-1)}{T_s}$$
+            </div>
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">ALGORITMO DE VELOCIDAD (INCREMENTAL)</div>
+                <p>Calcula la variación del control $\Delta u(k) = u(k) - u(k-1)$:</p>
+                $$\Delta u(k) = q_0 e(k) + q_1 e(k-1) + q_2 e(k-2)$$
+                $$q_0 = K_p + K_i T_s + \frac{K_d}{T_s}, \quad q_1 = -K_p - \frac{2 K_d}{T_s}, \quad q_2 = \frac{K_d}{T_s}$$
+            </div>
+        </div>
+
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">MECANISMO ANTI-WINDUP (CLAMPING)</div>
+            <p>Cuando el actuador (Puente H) se satura ($\pm V_{cc}$), la acumulación integral debe congelarse para evitar el retraso en la recuperación transitoria.</p>
+        </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide">
+        <div class="header"><span>3 / 5</span><span>SESIÓN 02: SINTONIZACIÓN DE PARÁMETROS</span></div>
+        <h2>03 MÉTODOS EMPÍRICOS</h2>
+        <h1>Sintonización de Ziegler-Nichols (Lazo Cerrado)</h1>
+
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">Γ PROCEDIMIENTO EXPERIMENTAL</div>
+            <p>1. Ajustar $K_i = 0$ y $K_d = 0$. Incrementar $K_p$ hasta que la salida presente oscilaciones sostenidas (Ganancia Crítica $K_u$).</p>
+            <p>2. Medir el periodo de oscilación resultante $T_u$.</p>
+        </div>
+
+        <div class="bloque-formal">
+            <div class="etiqueta-bloque">TABLA DE PARÁMETROS BÁSICA</div>
+            <table style="width:100%; text-align:center; font-family: 'Fira Code', monospace; font-size: 13px;">
+                <tr style="background:#eee;"><th>Tipo</th><th>$K_p$</th><th>$K_i$</th><th>$K_d$</th></tr>
+                <tr><td>P</td><td>$0.50 \, K_u$</td><td>-</td><td>-</td></tr>
+                <tr><td>PI</td><td>$0.45 \, K_u$</td><td>$0.54 \, K_u / T_u$</td><td>-</td></tr>
+                <tr><td>PID</td><td>$0.60 \, K_u$</td><td>$1.20 \, K_u / T_u$</td><td>$0.075 \, K_u T_u$</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- SLIDE 4: SIMULACIÓN -->
+    <div class="slide">
+        <div class="header"><span>4 / 5</span><span>SESIÓN 02: LABORATORIO VIRTUAL</span></div>
+        <h2>04 SIMULADOR PID INTERACTIVO</h2>
+        <h1>Efecto del Anti-Windup y Sintonización</h1>
+
+        <div class="grid-2" style="grid-template-columns: 280px 1fr;">
+            <div class="bloque-formal controls-panel">
+                <div class="etiqueta-bloque">SINTONIZACIÓN PID</div>
+                
+                <label>Kp: <span id="valKp">2.5</span></label>
+                <input type="range" id="kpSlider" min="0" max="10" step="0.1" value="2.5" oninput="runSim()">
+
+                <label>Ki: <span id="valKi">15</span></label>
+                <input type="range" id="kiSlider" min="0" max="50" step="1" value="15" oninput="runSim()">
+
+                <label>Kd: <span id="valKd">0.05</span></label>
+                <input type="range" id="kdSlider" min="0" max="0.5" step="0.01" value="0.05" oninput="runSim()">
+
+                <label><input type="checkbox" id="antiWindup" checked onchange="runSim()"> Activar Anti-Windup</label>
+            </div>
+            <div class="bloque-formal" style="height: 400px; padding: 10px;">
+                <canvas id="simChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5: CÓDIGO -->
+    <div class="slide">
+        <div class="header"><span>5 / 5</span><span>SESIÓN 02: DESPLIEGUE EN ESP32</span></div>
+        <h2>> LA HORA DEL CÓDIGO</h2>
+        <h1>Clase `PidController` en C++ con Anti-Windup</h1>
+
+        <div class="grid-2">
+            <div class="bloque-formal">
+                <div class="etiqueta-bloque">☐ IMPLEMENTACIÓN EN ROBUSTA</div>
+                <p>Incopora límite de salida y prevención de desbordamiento integral mediante filtrado y saturación.</p>
+            </div>
+            <div class="bloque-formal" style="background: var(--code-bg); color: #d4d4d4; font-family: monospace; font-size: 11px; border-top: 20px solid #333;">
+<span style="color:#569cd6">class</span> <span style="color:#4ec9b0">PidController</span> {
+<span style="color:#569cd6">private</span>:
+    <span style="color:#569cd6">float</span> Kp, Ki, Kd, minOut, maxOut;
+    <span style="color:#569cd6">float</span> e_prev = 0, integral = 0;
+<span style="color:#569cd6">public</span>:
+    PidController(<span style="color:#569cd6">float</span> kp, <span style="color:#569cd6">float</span> ki, <span style="color:#569cd6">float</span> kd, <span style="color:#569cd6">float</span> minO, <span style="color:#569cd6">float</span> maxO)
+      : Kp(kp), Ki(ki), Kd(kd), minOut(minO), maxOut(maxO) {}
+
+    <span style="color:#569cd6">float</span> <span style="color:#dcdcaa">compute</span>(<span style="color:#569cd6">float</span> setpoint, <span style="color:#569cd6">float</span> measured, <span style="color:#569cd6">float</span> dt) {
+        <span style="color:#569cd6">float</span> error = setpoint - measured;
+        <span style="color:#569cd6">float</span> p_term = Kp * error;
+        integral += error * dt;
+        <span style="color:#569cd6">float</span> i_term = Ki * integral;
+        <span style="color:#569cd6">float</span> d_term = Kd * (error - e_prev) / dt;
+        
+        <span style="color:#569cd6">float</span> output = p_term + i_term + d_term;
+        <span style="color:#6a9955">// Clamping Anti-Windup</span>
+        <span style="color:#569cd6">if</span> (output > maxOut) { output = maxOut; integral -= error * dt; }
+        <span style="color:#569cd6">else if</span> (output < minOut) { output = minOut; integral -= error * dt; }
+        
+        e_prev = error;
+        <span style="color:#569cd6">return</span> output;
+    }
+};
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación -->
+    <div class="footer-nav">
+        <button onclick="prevSlide()">← Atrás</button>
+        <span id="slideNum" style="font-family:'Fira Code'; font-size:12px; color:#666;">1 / 5</span>
+        <button onclick="nextSlide()">Adelante →</button>
+    </div>
+</div>
+
+<script>
+    let currentSlide = 0; const slides = document.querySelectorAll('.slide');
+    function showSlide(index) {
+        slides.forEach(s => s.classList.remove('active'));
+        slides[index].classList.add('active'); currentSlide = index;
+        document.getElementById('slideNum').innerText = `${index + 1} / 5`;
+        if(index === 3) setTimeout(runSim, 100);
+    }
+    function nextSlide() { if(currentSlide < 4) showSlide(currentSlide + 1); }
+    function prevSlide() { if(currentSlide > 0) showSlide(currentSlide - 1); }
+    document.addEventListener('keydown', (e) => { if(e.key === 'ArrowRight') nextSlide(); if(e.key === 'ArrowLeft') prevSlide(); });
+
+    let chart = null;
+    function runSim() {
+        const Kp = parseFloat(document.getElementById('kpSlider').value);
+        const Ki = parseFloat(document.getElementById('kiSlider').value);
+        const Kd = parseFloat(document.getElementById('kdSlider').value);
+        const useAntiWindup = document.getElementById('antiWindup').checked;
+
+        document.getElementById('valKp').innerText = Kp;
+        document.getElementById('valKi').innerText = Ki;
+        document.getElementById('valKd').innerText = Kd;
+
+        const Ra = 2.0, La = 0.05, Ke = 0.1, Kt = 0.1, Jm = 0.02, Bm = 0.01, Vcc = 24.0, Ts = 0.005;
+        let tData = [], wData = [], spData = [];
+        let w = 0, i = 0, e_sum = 0, e_prev = 0, sp = 100;
+
+        for (let step = 0; step < 160; step++) {
+            let e = sp - w;
+            e_sum += e * Ts;
+            let de = (e - e_prev) / Ts;
+            let u = Kp * e + Ki * e_sum + Kd * de;
+
+            // Saturation & Anti-windup
+            if (u > Vcc) { u = Vcc; if(useAntiWindup) e_sum -= e * Ts; }
+            if (u < -Vcc) { u = -Vcc; if(useAntiWindup) e_sum -= e * Ts; }
+
+            let di = (u - Ra * i - Ke * w) / La;
+            let dw = (Kt * i - Bm * w) / Jm;
+            i += di * Ts; w += dw * Ts; e_prev = e;
+
+            tData.push((step * Ts).toFixed(2));
+            wData.push(w);
+            spData.push(sp);
+        }
+
+        const ctx = document.getElementById('simChart').getContext('2d');
+        if(chart) chart.destroy();
+        chart = new Chart(ctx, { 
+            type: 'line', 
+            data: { 
+                labels: tData, 
+                datasets: [
+                    { label: 'Velocidad ω(t) [rad/s]', data: wData, borderColor: '#be1e2d', borderWidth: 2, pointRadius: 0 },
+                    { label: 'Setpoint', data: spData, borderColor: '#2c3e50', borderDash: [5,5], borderWidth: 1, pointRadius: 0 }
+                ]
+            }, 
+            options: { responsive: true, maintainAspectRatio: false, animation: false }
+        });
+    }
+</script>
+</body>
+</html>
